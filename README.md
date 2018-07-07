@@ -1,3 +1,5 @@
+# Support Python 3
+
 # drugbank_xml2csv_python
 Python script for converting DrugBank XML to relational CSV files. If loading CSVs to a SQL database, a sample query is:  
 `select distinct drugbank_id, drugname, inhibitor, antagonist, agonist`  

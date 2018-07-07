@@ -1,18 +1,25 @@
 from lxml import etree
-from StringIO import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO,BytesIO
+
 from collections import defaultdict
 import csv
 
 # Parse XML
-f = open('drugbank.xml','r')
-data = f.read()
+f = open('full_database.xml','r', encoding='utf-8')
+data = f.read().encode('utf-8')
+
 f.close()
 
-tree = etree.parse(StringIO(data))
-context = etree.iterparse(StringIO(data))
+
+parser = etree.XMLParser(recover=True, encoding='utf-8')
+tree = etree.parse(BytesIO(data), parser)
+context = etree.iterparse(BytesIO(data))
 
 root = tree.getroot()
-# print len(root), 'drugs'
+# print( len(root), 'drugs')
 
 
 #######################################################################
@@ -93,7 +100,7 @@ for child in root:
             target2attrib[target_id]['genbank_protein_id'] = target_genbank_protein
             target2attrib[target_id]['hgnc_id'] = target_hgnc_id
 
-        #print target_id, target_gene, target_name, target_organism, target_taxonomy_id, target_actions
+        #print( target_id, target_gene, target_name, target_organism, target_taxonomy_id, target_actions)
 
 
     # Get enzymes
@@ -148,7 +155,7 @@ for child in root:
             enzyme2attrib[enzyme_id]['genbank_protein_id'] = enzyme_genbank_protein
             enzyme2attrib[enzyme_id]['hgnc_id'] = enzyme_hgnc_id
 
-        #print enzyme_id, enzyme_gene, enzyme_name, enzyme_organism, enzyme_taxonomy_id, enzyme_actions
+        #print( enzyme_id, enzyme_gene, enzyme_name, enzyme_organism, enzyme_taxonomy_id, enzyme_actions)
 
 
     # Get transporters
@@ -203,15 +210,15 @@ for child in root:
             transporter2attrib[transporter_id]['genbank_protein_id'] = transporter_genbank_protein
             transporter2attrib[transporter_id]['hgnc_id'] = transporter_hgnc_id
 
-        #print transporter_id, transporter_gene, transporter_name, transporter_organism, transporter_taxonomy_id, transporter_actions
+        #print( transporter_id, transporter_gene, transporter_name, transporter_organism, transporter_taxonomy_id, transporter_actions)
 
 
-    print drugbank_id, drugname, drug_type, groups,
-    print 'targets:', len(drug2attrib[drugbank_id]['targets']),
-    print 'enzymes:', len(drug2attrib[drugbank_id]['enzymes']),
-    print 'transporters:', len(drug2attrib[drugbank_id]['transporters'])
+    print( drugbank_id, drugname, drug_type, groups,)
+    print( 'targets:', len(drug2attrib[drugbank_id]['targets']),)
+    print( 'enzymes:', len(drug2attrib[drugbank_id]['enzymes']),)
+    print( 'transporters:', len(drug2attrib[drugbank_id]['transporters']))
 
-print '\n'
+print( '\n')
 
 
 #######################################################################
@@ -223,8 +230,8 @@ for drugbank_id in sorted(drug2attrib.keys()):
     else:
         drugs.append(drugbank_id)
         
-print len(drug2attrib), "drugs parsed from XML"
-print len(drugs), "drugs with at least 1 target/ enzyme/ transporter"
+print( len(drug2attrib), "drugs parsed from XML")
+print( len(drugs), "drugs with at least 1 target/ enzyme/ transporter")
 
 
 #######################################################################
@@ -235,7 +242,7 @@ writer.writerow(['drugbank_id', 'drugname', 'drug_type', 'approved', 'experiment
 
 for drugbank_id in drugs:
     drugname = drug2attrib[drugbank_id]['drugname']
-    if isinstance(drugname, unicode):
+    if isinstance(drugname, str):
         if u'\u03b2' in drugname:
             drugname = drugname.replace(u'\u03b2', 'beta')
         if u'\u03b1' in drugname:
@@ -267,7 +274,7 @@ partners_written = set()
 # Targets
 for partner_id in sorted(target2attrib.keys()):
     if partner_id in partners_written:
-        # print partner_id, target2attrib[partner_id]['gene'], 'already recorded'
+        # print( partner_id, target2attrib[partner_id]['gene'], 'already recorded')
         continue
     
     partner_name = target2attrib[partner_id]['name']
@@ -288,13 +295,13 @@ for partner_id in sorted(target2attrib.keys()):
         writerh.writerow([partner_id, partner_name, gene_name, uniprot_id, genbank_gene_id, genbank_protein_id, hgnc_id, organism, taxonomy_id])
     
     if taxonomy_id == '9606' and organism.lower() != 'human':
-        print partner_id, target2attrib[partner_id]['gene'], organism, taxonomy_id, 'organism mismatch'
+        print( partner_id, target2attrib[partner_id]['gene'], organism, taxonomy_id, 'organism mismatch')
         
         
 # enzymes
 for partner_id in sorted(enzyme2attrib.keys()):
     if partner_id in partners_written:
-        # print partner_id, enzyme2attrib[partner_id]['gene'], 'already recorded in targets'
+        # print( partner_id, enzyme2attrib[partner_id]['gene'], 'already recorded in targets')
         continue
     
     partner_name = enzyme2attrib[partner_id]['name']
@@ -315,13 +322,13 @@ for partner_id in sorted(enzyme2attrib.keys()):
         writerh.writerow([partner_id, partner_name, gene_name, uniprot_id, genbank_gene_id, genbank_protein_id, hgnc_id, organism, taxonomy_id])
     
     if taxonomy_id == '9606' and organism.lower() != 'human':
-        print partner_id, enzyme2attrib[partner_id]['gene'], organism, taxonomy_id, 'organism mismatch'
+        print( partner_id, enzyme2attrib[partner_id]['gene'], organism, taxonomy_id, 'organism mismatch')
         
         
 # transporters
 for partner_id in sorted(transporter2attrib.keys()):
     if partner_id in partners_written:
-        # print partner_id, transporter2attrib[partner_id]['gene'], 'already recorded in targets and/or enzymes'
+        # print( partner_id, transporter2attrib[partner_id]['gene'], 'already recorded in targets and/or enzymes')
         continue
     
     partner_name = transporter2attrib[partner_id]['name']
@@ -342,7 +349,7 @@ for partner_id in sorted(transporter2attrib.keys()):
         writerh.writerow([partner_id, partner_name, gene_name, uniprot_id, genbank_gene_id, genbank_protein_id, hgnc_id, organism, taxonomy_id])
     
     if taxonomy_id == '9606' and organism.lower() != 'human':
-        print partner_id, transporter2attrib[partner_id]['gene'], organism, taxonomy_id, 'organism mismatch'
+        print( partner_id, transporter2attrib[partner_id]['gene'], organism, taxonomy_id, 'organism mismatch')
         
 outf.close()
 outfh.close()
